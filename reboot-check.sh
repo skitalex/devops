@@ -88,10 +88,10 @@ cmd_verify() {
     ;;
   esac
 
-  local u
-  u=$(systemctl --failed --no-legend)
+  local failed
+  failed=$(systemctl --failed --no-legend)
   if [[ -n $u ]]; then
-    report+="failed units:"$'\n'"$(systemctl --failed --no-legend)"$'\n'
+    report+="failed units:"$'\n'"$failed"$'\n'
   else
     report+="failed units:none"$'\n'
   fi
