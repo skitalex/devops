@@ -8,7 +8,7 @@ usage() {
   echo "  check         is a reboot required (exit 1 if yes)" >&2
   echo "  verify        wait system up, take snapshot, compare before/after" >&2
   echo "  snapshot      take snapshot in before/after" >&2
-  echo "  reboot        if check 1 reboot is required, else takes snapshot and reboot" >&2
+  echo "  reboot        if check 1 reboot is required, takes snapshot and reboot" >&2
   exit 2
 }
 
@@ -21,11 +21,40 @@ readonly SERVICES_FILE="services.txt"
 readonly PORTS_FILE="ports.txt"
 readonly CONTAINERS_FILE="containers.txt"
 
+require_root() {
+  ((EUID == 0)) || {
+    echo "script must run as root (use sudo)" >&2
+    exit 1
+  }
+}
+
 cmd_reboot() {
-  echo "reboot"
+  require_root
+
+  local rc=0
+  cmd_check || rc=$?
+
+  case $rc in
+  0) return 0 ;;
+  1)
+    echo "taking 'before' snapshot"
+    if ! cmd_snapshot before; then
+      echo "snapshot failed, reboot cancelled" >&2
+      return 1
+    fi
+    logger -t reboot-check "snapshot taken, rebooting"
+    # systemctl reboot 
+    ;;
+  *)
+    echo "check failed (code $rc)" >&2
+    return 1
+    ;;
+  esac
 }
 
 cmd_snapshot() {
+  require_root
+
   [[ $# -eq 1 ]] || usage
 
   local dir
@@ -59,6 +88,8 @@ cmd_snapshot() {
 }
 
 cmd_verify() {
+  require_root
+
   local state
   state=$(systemctl is-system-running --wait) || true
 
@@ -68,7 +99,7 @@ cmd_verify() {
     echo "folder before does not exist" >&2
     return 1
   fi
-  local report
+  local report=""
   report+="system status: $state"$'\n'
 
   cmd_snapshot after
@@ -90,7 +121,7 @@ cmd_verify() {
 
   local failed
   failed=$(systemctl --failed --no-legend)
-  if [[ -n $u ]]; then
+  if [[ -n $failed ]]; then
     report+="failed units:"$'\n'"$failed"$'\n'
   else
     report+="failed units:none"$'\n'
