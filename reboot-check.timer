@@ -1,0 +1,9 @@
+[Unit]
+Description=Reboot check timer
+
+[Timer]
+OnBootSec=2min
+Unit=reboot-check.service
+
+[Install]
+WantedBy=timers.target

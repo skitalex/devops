@@ -65,6 +65,8 @@ cmd_snapshot() {
     echo "snapshot args must be after/before" >&2
     return 1
   fi
+  
+  rm -rf "$SNAPSHOT_DIR/before" "$SNAPSHOT_DIR/after"
 
   mkdir -p "$SNAPSHOT_DIR/$dir"
 
