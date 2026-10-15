@@ -1,0 +1,8 @@
+[Unit]
+Description=Reboot check service
+ConditionPathExists=/var/lib/reboot-check/before
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/reboot-check verify
+User=root

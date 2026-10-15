@@ -43,7 +43,7 @@ cmd_reboot() {
       return 1
     fi
     logger -t reboot-check "snapshot taken, rebooting"
-    # systemctl reboot 
+    # systemctl reboot
     ;;
   *)
     echo "check failed (code $rc)" >&2
