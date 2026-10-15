@@ -66,24 +66,24 @@ cmd_snapshot() {
     return 1
   fi
   
-  rm -rf "$SNAPSHOT_DIR/before" "$SNAPSHOT_DIR/after"
+  rm -rf "${SNAPSHOT_DIR:?}/before" "${SNAPSHOT_DIR:?}/after"
 
-  mkdir -p "$SNAPSHOT_DIR/$dir"
+  mkdir -p "${SNAPSHOT_DIR:?}/$dir"
 
   # kernel snapshot
-  uname -r >"$SNAPSHOT_DIR/$dir/$KERNEL_FILE"
+  uname -r >"${SNAPSHOT_DIR:?}/$dir/$KERNEL_FILE"
 
   # services snapshot
-  systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' | sort -u >"$SNAPSHOT_DIR/$dir/$SERVICES_FILE"
+  systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' | sort -u >"${SNAPSHOT_DIR:?}/$dir/$SERVICES_FILE"
 
   # ports snapshot
-  ss -H -t -u -l -n | awk '{print $1, $5}' | sort -u >"$SNAPSHOT_DIR/$dir/$PORTS_FILE"
+  ss -H -t -u -l -n | awk '{print $1, $5}' | sort -u >"${SNAPSHOT_DIR:?}/$dir/$PORTS_FILE"
 
   # Docker containers snapshot
   if ! command -v docker >/dev/null 2>&1; then
-    echo "docker not installed" >"$SNAPSHOT_DIR/$dir/$CONTAINERS_FILE"
-  elif ! { docker ps --format '{{.Names}}' | sort -u; } >"$SNAPSHOT_DIR/$dir/$CONTAINERS_FILE" 2>/dev/null; then
-    echo "docker unavailable" >"$SNAPSHOT_DIR/$dir/$CONTAINERS_FILE"
+    echo "docker not installed" >"${SNAPSHOT_DIR:?}/$dir/$CONTAINERS_FILE"
+  elif ! { docker ps --format '{{.Names}}' | sort -u; } >"${SNAPSHOT_DIR:?}/$dir/$CONTAINERS_FILE" 2>/dev/null; then
+    echo "docker unavailable" >"${SNAPSHOT_DIR:?}/$dir/$CONTAINERS_FILE"
   fi
 
   return 0
@@ -97,7 +97,7 @@ cmd_verify() {
 
   mkdir -p "$LOGS_DIR"
 
-  if [[ ! -d "$SNAPSHOT_DIR/before" ]]; then
+  if [[ ! -d "${SNAPSHOT_DIR:?}/before" ]]; then
     echo "folder before does not exist" >&2
     return 1
   fi
@@ -108,7 +108,7 @@ cmd_verify() {
 
   local rc=0
   local diffs
-  diffs=$(diff -ru "$SNAPSHOT_DIR/before/" "$SNAPSHOT_DIR/after/") || rc=$?
+  diffs=$(diff -ru "${SNAPSHOT_DIR:?}/before/" "${SNAPSHOT_DIR:?}/after/") || rc=$?
 
   case $rc in
   0) report+="snapshot diff: none"$'\n' ;;
@@ -130,9 +130,9 @@ cmd_verify() {
   fi
 
   local before_kernel
-  before_kernel=$(cat "$SNAPSHOT_DIR/before/$KERNEL_FILE")
+  before_kernel=$(cat "${SNAPSHOT_DIR:?}/before/$KERNEL_FILE")
   local after_kernel
-  after_kernel=$(cat "$SNAPSHOT_DIR/after/$KERNEL_FILE")
+  after_kernel=$(cat "${SNAPSHOT_DIR:?}/after/$KERNEL_FILE")
   report+="kernel: $before_kernel -> $after_kernel"$'\n'
 
   local file_name
@@ -140,7 +140,7 @@ cmd_verify() {
 
   printf '%s' "$report" >"$LOGS_DIR/$file_name"
   logger -t reboot-check -f "$LOGS_DIR/$file_name"
-  rm -rf "$SNAPSHOT_DIR/before"
+  rm -rf "${SNAPSHOT_DIR:?}/before"
   if [[ ! $rc -eq 0 ]]; then
     return 1
   fi

@@ -1,0 +1,9 @@
+[Unit]
+Description=Timer to check is reboot required
+
+[Timer]
+Unit=reboot-init.service
+
+[Install]
+OnCalendar=0-3-*-*-1
+WantedBy=timers.target

@@ -1,0 +1,7 @@
+[Unit]
+Description=Check reboot required
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/reboot-check reboot
+User=root
