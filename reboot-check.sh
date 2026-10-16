@@ -20,6 +20,8 @@ readonly KERNEL_FILE="kernel.txt"
 readonly SERVICES_FILE="services.txt"
 readonly PORTS_FILE="ports.txt"
 readonly CONTAINERS_FILE="containers.txt"
+readonly IGNORE=(fwupd.service)
+readonly IGNORE_UDP=(xray-linux-amd6)
 
 require_root() {
   ((EUID == 0)) || {
@@ -43,7 +45,7 @@ cmd_reboot() {
       return 1
     fi
     logger -t reboot-check "snapshot taken, rebooting"
-    # systemctl reboot
+    systemctl reboot
     ;;
   *)
     echo "check failed (code $rc)" >&2
@@ -65,8 +67,8 @@ cmd_snapshot() {
     echo "snapshot args must be after/before" >&2
     return 1
   fi
-  
-  rm -rf "${SNAPSHOT_DIR:?}/before" "${SNAPSHOT_DIR:?}/after"
+
+  rm -rf "${SNAPSHOT_DIR:?}/$dir"
 
   mkdir -p "${SNAPSHOT_DIR:?}/$dir"
 
@@ -74,10 +76,32 @@ cmd_snapshot() {
   uname -r >"${SNAPSHOT_DIR:?}/$dir/$KERNEL_FILE"
 
   # services snapshot
-  systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' | sort -u >"${SNAPSHOT_DIR:?}/$dir/$SERVICES_FILE"
+  systemctl list-units --type=service --state=running --no-legend --plain |
+    awk '{print $1}' |
+    sort -u |
+    {
+      grep -vFx -f <(printf '%s\n' "${IGNORE[@]}") || (($? == 1))
+    } \
+      >"${SNAPSHOT_DIR:?}/$dir/$SERVICES_FILE" || return 1
 
   # ports snapshot
-  ss -H -t -u -l -n | awk '{print $1, $5}' | sort -u >"${SNAPSHOT_DIR:?}/$dir/$PORTS_FILE"
+  ss -Hulntp |
+    awk -v ignore="${IGNORE_UDP[*]}" '
+    BEGIN {
+    split(ignore, arr, " ")
+    for(i in arr)
+      skip[arr[i]] = 1
+    }
+    {
+    m = split($5, a, ":")
+    port = a[m]
+    split($7, p, "\"")
+    name = (p[2]!="") ? p[2] : "-"
+    if (!(name in skip && $1 == "udp"))
+      print $1, port, name
+    }' |
+    sort -u \
+      >"${SNAPSHOT_DIR:?}/$dir/$PORTS_FILE" || return 1
 
   # Docker containers snapshot
   if ! command -v docker >/dev/null 2>&1; then
