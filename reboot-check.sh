@@ -21,7 +21,7 @@ readonly SERVICES_FILE="services.txt"
 readonly PORTS_FILE="ports.txt"
 readonly CONTAINERS_FILE="containers.txt"
 readonly IGNORE=(fwupd.service)
-readonly IGNORE_UDP=(xray-linux-amd6)
+readonly IGNORE_UDP=(xray-linux-amd6 systemd-timesyn)
 
 require_root() {
   ((EUID == 0)) || {
