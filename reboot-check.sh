@@ -77,7 +77,9 @@ cmd_snapshot() {
 
   # services snapshot
   systemctl list-units --type=service --state=running --no-legend --plain |
-    awk '{print $1}' |
+    awk '
+    $1 ~ /^user@/ { next }
+    { print $1}' |
     sort -u |
     {
       grep -vFx -f <(printf '%s\n' "${IGNORE[@]}") || (($? == 1))
