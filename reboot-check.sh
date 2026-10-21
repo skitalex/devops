@@ -20,7 +20,7 @@ readonly KERNEL_FILE="kernel.txt"
 readonly SERVICES_FILE="services.txt"
 readonly PORTS_FILE="ports.txt"
 readonly CONTAINERS_FILE="containers.txt"
-readonly IGNORE=(fwupd.service)
+readonly IGNORE=(fwupd.service packagekit.service upower.service)
 readonly IGNORE_UDP=(xray-linux-amd6 systemd-timesyn)
 
 require_root() {
@@ -134,7 +134,7 @@ cmd_verify() {
 
   local rc=0
   local diffs
-  diffs=$(diff -ru "${SNAPSHOT_DIR:?}/before/" "${SNAPSHOT_DIR:?}/after/") || rc=$?
+  diffs=$(diff -x "${KERNEL_FILE}" -ru "${SNAPSHOT_DIR:?}/before/" "${SNAPSHOT_DIR:?}/after/") || rc=$?
 
   case $rc in
   0) report+="snapshot diff: none"$'\n' ;;
